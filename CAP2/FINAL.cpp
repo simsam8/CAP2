@@ -161,5 +161,10 @@ int main() {
         runBenchmark<16>(10000 * i);
     }
 
+
+    cout << "Press to exit: ";
+    int ___;
+    cin >> ___;
+
     return 0;
 }
