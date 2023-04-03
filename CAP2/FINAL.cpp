@@ -2,7 +2,8 @@
 #include <vector>
 #include <random>
 #include <immintrin.h>
-#include <chrono>
+#include <ctime>
+#include <array>
 #include <string>
 
 using namespace std;
@@ -94,10 +95,8 @@ void x86_multiplication(int (&m1)[size][size], int (&m2)[size][size], int N) {
 
     for (int i{}; i < N; i++) {
         int* row1{ m1[i] };
-        cout << &row1 << endl;
         for (int j{}; j < N; j++) {
             int* col2{ m2[j] };
-            cout << &col2 << endl;
             int sum{};
             
             __asm {
@@ -152,8 +151,9 @@ void sse_multiplication(int mat1[N][N], int mat2[N][N]) {
 }
 
 template <int size>
-int* generate_random_matrix(int dim) {
-    static int matrix[size][size]{};
+array<array<int,size>, size> generate_random_matrix(int dim) {
+
+    array<array<int,size>, size> matrix;
 
     random_device rd; // obtain random number from hardware
     mt19937 gen(rd()); // seed the generator
@@ -165,28 +165,77 @@ int* generate_random_matrix(int dim) {
         }
     }
 
-    return *matrix;
+    return matrix;
 
 }
 
 template <int matrix_size>
 void runBenchmark(int iterations) {
-    for (int i{}; i < iterations; i++) {
-        int* m1[matrix_size][matrix_size]{ generate_random_matrix<matrix_size>(matrix_size) };
-        int* m2[matrix_size][matrix_size]{ generate_random_matrix<matrix_size>(matrix_size) };
+    float time_c{};
+    float time_x86{};
+    float time_sse{};
 
+	int m1[matrix_size][matrix_size]{};
+	int m2[matrix_size][matrix_size]{};
+
+	random_device rd; // obtain random number from hardware
+	mt19937 gen(rd()); // seed the generator
+	uniform_int_distribution<> distr(1, 501);
+
+	for (int i{}; i < matrix_size; i++) {
+		for (int j{}; j < matrix_size; j++) {
+			m1[i][j] = distr(gen);
+			m2[i][j] = distr(gen);
+		}
+	}
+
+    for (int i{}; i < iterations; i++) {
+
+        
+        clock_t c_start = clock();
+        cpp_multiplication<matrix_size>(m1, m2, matrix_size);
+        clock_t c_end = clock();
+
+        time_c += float(c_end - c_start) / CLOCKS_PER_SEC;
+
+        clock_t x86_start = clock();
+        x86_multiplication<matrix_size>(m1, m2, matrix_size);
+        clock_t x86_end = clock();
+
+        time_x86 += float(x86_end - x86_start) / CLOCKS_PER_SEC;
+        
+        clock_t sse_start = clock();
+        sse_multiplication<matrix_size>(m1, m2);
+        clock_t sse_end = clock();
+
+        time_sse += float(sse_end - sse_start) / CLOCKS_PER_SEC;
 
     }
+
+    cout << "Running: " << iterations << " iterations.\n";
+    cout << "On " << matrix_size << "x" << matrix_size << " matrices.\n";
+    cout << "Time in C++ code: " << time_c << '\n';
+    cout << "Time in x86 code: " << time_x86 << '\n';
+    cout << "Time in SSE code: " << time_sse << '\n';
+    cout << endl;
 }
 
 int main() {
     //Ask for dimension of the arrays
     constexpr int dimension{ fourxfour };
     
-    int m1[dimension][dimension]{};
-    int m2[dimension][dimension]{};
-    
-    runBenchmark<4>(2);
+    for (int i{1}; i <= 10; i++) {
+        runBenchmark<4>(10000 * i);
+    }
+    for (int i{1}; i <= 10; i++) {
+        runBenchmark<8>(10000 * i);
+    }
+    for (int i{1}; i <= 10; i++) {
+        runBenchmark<12>(10000 * i);
+    }
+    for (int i{1}; i <= 10; i++) {
+        runBenchmark<16>(10000 * i);
+    }
 
 
 
