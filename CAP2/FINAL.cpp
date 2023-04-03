@@ -1,14 +1,16 @@
 #include <iostream>
 #include <vector>
-#include "cpp_multiplication.h"
+#include <random>
+#include <immintrin.h>
 #include <chrono>
 #include <string>
 
 using namespace std;
+constexpr int fourxfour{ 4 };
 
 
-// function to print out matrices
-void print_matrix(vector<vector<int>> matrix, int dimension, string output_text) {
+template <int N>
+void print_matrix(int matrix[N][N], int &dimension, string output_text) {
 	cout << endl << output_text << endl;
 	for (int i = 0;i < dimension;i++) {
 		for (int j = 0; j < dimension; j++) {
@@ -19,7 +21,10 @@ void print_matrix(vector<vector<int>> matrix, int dimension, string output_text)
 }
 
 
-vector<vector<int>> multipx86(vector<vector<int>> m1, vector<vector<int>> m2, int dimension){
+/*
+vector<vector<int>> multipx86(vector<vector<int>> m1,
+                                vector<vector<int>> m2,
+                                int dimension){
     vector<vector<int>> mResult(dimension, vector<int>(dimension));
     vector<int> aux1(dimension); 
     vector<int> aux2(dimension);
@@ -56,40 +61,138 @@ vector<vector<int>> multipx86(vector<vector<int>> m1, vector<vector<int>> m2, in
 
                 end_loop:
                    mov sum, ebx;
-
             }
 
             mResult[i][y] = sum;
         }   
     }
-
     return mResult;
 }
+*/
+
+template <int N>
+void cpp_multiplication(int m1[N][N], int m2[N][N], int dim) {
+    int result[N][N]{ 0 };
+	// Loop through rows of m1
+	for (int i{}; i < dim; i++) {
+		// Loop through columns of m2
+		for (int j{}; j < dim; j++) {
+			int sum{}; 
+			// Loop through corresponding index in row of m1 and column of m2
+			for (int k{}; k < dim; k++) {
+				sum += m1[i][k] * m2[k][j]; // multply elements
+			}
+			result[i][j] = sum; // dot product of [i][j]
+		}
+	}
+}
+
+template <int size>
+void x86_multiplication(int (&m1)[size][size], int (&m2)[size][size], int N) {
+	
+	int product[size][size]{};
+
+    for (int i{}; i < N; i++) {
+        int* row1{ m1[i] };
+        cout << &row1 << endl;
+        for (int j{}; j < N; j++) {
+            int* col2{ m2[j] };
+            cout << &col2 << endl;
+            int sum{};
+            
+            __asm {
+
+                jmp start;
+                start:
+					mov esi, 0; // sum
+					mov ecx, 0; // counter
+                    jmp for_loop;
 
 
+                for_loop:
+                    cmp ecx, N;
+                    jae end_loop;
+					mov ebx, [row1];
+					mov edx, [col2];
+                    mov ebx, [ebx + ecx * 4];
+                    mov edx, [edx + ecx * 4];
 
-int main() {
+                    mov eax, ebx;
+                    mul edx;
+                    add esi, eax;
 
-    //Ask for dimension of the arrays
-    int dimension = 0;
+                    inc ecx;
+                    jmp for_loop;
 
-    cout << "Introduce la dimension de la matriz: " << endl;
-    cin >> dimension;
+				end_loop:
+                    mov [sum], esi;
+            }
+            product[i][j] = sum;
+        }
+    }
+}
 
-    //Declare the matrix 1 and 2
-    vector<vector<int>> m1(dimension, vector<int>(dimension));
-    vector<vector<int>> m2(dimension, vector<int>(dimension));
+template <int N>
+void sse_multiplication(int mat1[N][N], int mat2[N][N]) {
+    int i, j, k; // initialize loop counters
+    int result[N][N]{ 0 };
+    __m128i vA, vB, vR; // declare SSE registers for operands and result
 
+    for (i = 0; i < N; ++i) { // iterate over rows of first matrix
+        for (k = 0; k < N; ++k) { // iterate over columns of first matrix and rows of second matrix
+            vA = _mm_set1_epi32(mat1[i][k]); // load ith row of first matrix into SSE register
+            for (j = 0; j < N; j += 4) { // iterate over columns of second matrix, unroll loop by 4
+                vB = _mm_loadu_si128((__m128i*) & mat2[k][j]); // load 4 integers from j 'th column of second matrix into SSE register
+                vR = _mm_loadu_si128((__m128i*) & result[i][j]); // load 4 integers from j 'th column of output matrix into SSE register
+                vR = _mm_add_epi32(vR, _mm_mullo_epi32(vA, vB)); // perform element-wise multiplication and addition of operands
+                _mm_storeu_si128((__m128i*) & result[i][j], vR); // store 4 integers of result back to memory
+            }
+        }
+    }
+}
 
-    //Create with rand() both arrays
-    for (int i = 0;i < dimension;i++) {
-        for (int j = 0; j < dimension; j++) {
-            m1[i][j] = rand() % 101;
-            m2[i][j] = rand() % 101;
+template <int size>
+int* generate_random_matrix(int dim) {
+    static int matrix[size][size]{};
+
+    random_device rd; // obtain random number from hardware
+    mt19937 gen(rd()); // seed the generator
+    uniform_int_distribution<> distr(1, 501);
+
+    for (int i{}; i < dim; i++) {
+        for (int j{}; j < dim; j++) {
+            matrix[i][j] = distr(gen);
         }
     }
 
-    /*
+    return *matrix;
+
+}
+
+template <int matrix_size>
+void runBenchmark(int iterations) {
+    for (int i{}; i < iterations; i++) {
+        int* m1[matrix_size][matrix_size]{ generate_random_matrix<matrix_size>(matrix_size) };
+        int* m2[matrix_size][matrix_size]{ generate_random_matrix<matrix_size>(matrix_size) };
+
+
+    }
+}
+
+int main() {
+    //Ask for dimension of the arrays
+    constexpr int dimension{ fourxfour };
+    
+    int m1[dimension][dimension]{};
+    int m2[dimension][dimension]{};
+    
+    runBenchmark<4>(2);
+
+
+
+    //Create with rand() both arrays
+
+   /*
     //Print matrix 1 and 2
     cout << endl << "Esta es la primera matriz: " << endl;
     for (int i = 0;i < dimension;i++) {
@@ -106,18 +209,16 @@ int main() {
         }
         cout << endl;
     }
-    */
 
     //Set a clock for every call to the functions in order to see what time lasts each one
 
-    //Call divisioncpp(), divisionx86(), divisionSSE()
-
-    print_matrix(m1, dimension, "Esta es la primera matriz: ");
-    print_matrix(m2, dimension, "Esta es la segunda matriz: ");
-
    // cpu time of  CPP
+
     auto start_cpp = chrono::high_resolution_clock::now();
-    print_matrix(cpp_mul::cpp_multiplication(m1, m2, dimension), dimension, "m1*m2 in cpp");
+    //print_matrix(toy_bench::cpp_multiplication(m1, m2, dimension), dimension, "m1*m2 in cpp");
+    //toy_bench::cpp_multiplication(m1, m2, dimension);
+    sse_multiplication<dimension>(m1, m2);
+    cpp_multiplication<dimension>(m1, m2, dimension);
     auto end_cpp = chrono::high_resolution_clock::now();
 
 
@@ -127,26 +228,14 @@ int main() {
     
      // cpu time of  x86
     auto start_x86 = chrono::high_resolution_clock::now();
-    print_matrix(multipx86(m1, m2, dimension), dimension, "m1*m2 in x86");
+    x86_multiplication<dimension>(m1,m2, dimension);
     auto end_x86 = chrono::high_resolution_clock::now();
 
 
     chrono::duration<double> time_taken_x86 = end_x86 - start_x86;
     cout << "Time in s: " << time_taken_x86.count() << endl;
 	
-	
-   //Show the results of each function
+    */
    
     return 0;
 }
-
-/*
-divisioncpp(){
- }
-*/  
-
-/*
-divisionSSE(){
-     
-}
-*/

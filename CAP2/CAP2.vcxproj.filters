@@ -21,12 +21,21 @@
     <ClCompile Include="FINAL.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SSE.cpp">
+    <ClCompile Include="sse_multiplication.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="x86_multiplication.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpp_multiplication.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="x86_multiplication.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="see_multiplication.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

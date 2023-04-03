@@ -141,10 +141,13 @@
   <ItemGroup>
     <ClCompile Include="cpp_multiplication.cpp" />
     <ClCompile Include="FINAL.cpp" />
-    <ClCompile Include="SSE.cpp" />
+    <ClCompile Include="x86_multiplication.cpp" />
+    <ClCompile Include="sse_multiplication.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cpp_multiplication.h" />
+    <ClInclude Include="see_multiplication.h" />
+    <ClInclude Include="x86_multiplication.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />

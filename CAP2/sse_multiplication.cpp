@@ -1,15 +1,14 @@
 #include <iostream>
-#include <vector>
 #include <chrono>
 #include "immintrin.h"
 
 using namespace std;
 
-const int N =12 ;
 
-void matmulSSE_v2(int mat1[N][N], int mat2[N][N], int result[N][N]) {
+template <int N>
+void sse_multiplication(int mat1[N][N], int mat2[N][N]) {
     int i, j, k; // initialize loop counters
-
+    int result[N][N]{ 0 };
     __m128i vA, vB, vR; // declare SSE registers for operands and result
 
     for (i = 0; i < N; ++i) { // iterate over rows of first matrix

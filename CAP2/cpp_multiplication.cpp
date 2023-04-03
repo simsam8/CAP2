@@ -1,12 +1,8 @@
-#include <iostream>
-#include <vector>
 
-using namespace std;
+namespace toy_bench {
 
-namespace cpp_mul {
-
-    vector<vector<int>> cpp_multiplication(vector<vector<int>> m1, vector<vector<int>> m2, int dim) {
-        vector<vector<int>> result(dim, vector<int>(dim));
+    template <int N>
+    int cpp_multiplication(int m1[N][N], int m2[N][N], int result[N][N], int dim) {
         // Loop through rows of m1
         for (int i{}; i < dim; i++) {
             // Loop through columns of m2
